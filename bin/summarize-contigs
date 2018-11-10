@@ -1,0 +1,64 @@
+#!/bin/bash
+#ln -fs ../ref.fa ./
+#cat contig-alignments.psa | grep -B 1 -P '^\d' | grep '>' | sed 's/>contig/NODE/' > NODE_ids.txt
+#contignum=`wc -l NODE_ids.txt | awk '{ print $1; }'`
+##echo "$contignum contigs"
+#seqsplit.pl -f contigs.fa -o toAlign.fa -O fasta -x $contignum -n $contignum
+#mkdir -p mummer
+#cd mummer
+#ln -s ../toAlign.fa_1 ./contigs.fa
+#ln -s ../../ref.fa ./
+#
+nucmer ref.fa contigs.fa
+mummerplot -f -l --large -t png out.delta
+#show-coords -T -I 80 -c -g -r out.delta | tee out.coords | sed -n '1,4!p' | awk 'BEGIN { TOT=0; LEN=0 }{ if ($9 >= 75) { TOT += $8; LEN += $5 } } END{ print "Total % coverage = ",TOT,"\nTotal length of aligned contigs = ",LEN; print TOT"\t"LEN; }' > total-coverage.txt
+#show-coords -T -I 80 -c -g -r out.delta | tee out.coords | sed -n '1,4!p' | awk 'BEGIN { TOT=0; LEN=0 }{ if ($9 >= 25) { TOT += $8; LEN += $5 } } END{ print "Total % coverage = ",TOT,"\nTotal length of aligned contigs = ",LEN; print LEN"\t"TOT; }' > total-coverage.txt
+show-coords -T -I 80 -c -g -r out.delta | tee out.coords | sed -n '1,4!p' | awk 'BEGIN { TOT=0; LEN=0 }{ if ($6 >= 100) { TOT += $8; LEN += $5 } } END{ print "Total % coverage = ",TOT,"\nTotal length of aligned contigs = ",LEN; print LEN"\t"TOT; }' > total-coverage.txt
+show-snps -C -r -T -x 3 out.delta > out.snps
+#show-tiling -i 80 -a -p scaffold.fa -R out.delta > out.tiling
+show-tiling -i 80 -p scaffold.fa -R out.delta > out.tiling
+
+#for contig in `grep '>' contigs.fa | sed 's/>//'`
+#do
+#    echo $contig
+#done
+#
+cd ..
+
+echo
+echo
+echo "total contigs that map to reference"
+#grep -c '>' mummer/contigs.fa
+CNTGS=`grep -c '>' mummer/contigs.fa`
+echo $CNTGS
+#echo $contignum
+#echo "total percent coverage"
+#echo
+cat mummer/total-coverage.txt
+TC=`tail -n 1 mummer/total-coverage.txt`
+#echo $TC
+echo
+SNP=`~sgivan/bin/parse-mummer-snps.pl --infile mummer/out.snps --tabout | awk '{ print $1; }'`
+INDEL=`~sgivan/bin/parse-mummer-snps.pl --infile mummer/out.snps --tabout | awk '{ print $2; }'`
+#echo $SNP
+echo "total number of nucleotide differences (SNPs + indel nt's)"
+DIFFS=`sed -n '1,4!p' mummer/out.snps | wc -l | awk '{ print $1; }'`
+echo $DIFFS
+
+TOT=`tail -n 1 mummer/total-coverage.txt | cut -f 1`
+#TOT=`grep -v '>' mummer/out.tiling | awk 'BEGIN{ SUM=0; } { SUM += $4; } END{ print SUM; }'`
+#echo "TOT = " $TOT
+echo
+
+~sgivan/bin/parse-mummer-snps.pl --infile mummer/out.snps
+echo
+echo "SNPs per kb of aligned contig sequence:"
+echo "scale=2; 1000 * $SNP / $TOT" | bc
+SnK=`echo "scale=2; 1000 * $SNP / $TOT" | bc`
+echo
+echo "Total nt diffs per kb of aligned contig sequence:"
+echo "scale=2; 1000 * $DIFFS / $TOT" | bc
+DpK=`echo "scale=2; 1000 * $DIFFS / $TOT" | bc`
+echo
+echo $CNTGS $TOT $SNP $INDEL $DIFFS $SnK $DpK
+

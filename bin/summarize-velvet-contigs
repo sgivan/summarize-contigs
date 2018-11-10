@@ -1,0 +1,47 @@
+#!/bin/bash
+ln -fs ../ref.fa ./
+cat contig-alignments.psa | grep -B 1 -P '^\d' | grep '>' | sed 's/>contig/NODE/' > NODE_ids.txt
+contignum=`wc -l NODE_ids.txt | awk '{ print $1; }'`
+echo "$contignum contigs"
+seqsplit.pl -f contigs.fa -o toAlign.fa -O fasta -x $contignum -n $contignum
+mkdir -p mummer
+cd mummer
+ln -s ../toAlign.fa_1 ./contigs.fa
+ln -s ../../ref.fa ./
+#
+~sgivan/bin/summarize-contigs
+#nucmer ref.fa contigs.fa
+#mummerplot -f -l --large -t png out.delta
+#show-coords -T -I 80 -c -g -r out.delta | tee out.coords | sed -n '1,4!p' | awk 'BEGIN { TOT=0; LEN=0 }{ if ($9 >= 75) { TOT += $8; LEN += $5 } } END{ print "Total % coverage = ",TOT,"\nTotal length of aligned contigs = ",LEN; print TOT"\t"LEN; }' > total-coverage.txt
+#show-snps -C -r -T -x 3 out.delta > out.snps
+#show-tiling -a -p scaffold.fa -R out.delta > out.tiling
+#
+##for contig in `grep '>' contigs.fa | sed 's/>//'`
+##do
+##    echo $contig
+##done
+##
+#cd ..
+#
+#echo
+#echo
+#echo "total contigs that map to reference"
+#echo $contignum
+##echo "total percent coverage"
+#echo
+#cat mummer/total-coverage.txt
+#echo
+#echo "total number of SNPs"
+#wc -l mummer/out.snps | awk '{ print $1; }'
+#
+#SNP=`wc -l mummer/out.snps | awk '{ print $1; }'`
+#TOT=`tail -n 1 mummer/total-coverage.txt | cut -f 2`
+##echo $TOT
+##echo $SNP
+##SpK=`echo 'scale=2; $SNP / $TOT * 1000' | bc`
+#echo
+##echo "SNPs/kb = " $SpK
+#echo "SNPs per kb of aligned contig sequence:"
+#echo "scale=2; 1000 * $SNP / $TOT" | bc
+#echo
+
